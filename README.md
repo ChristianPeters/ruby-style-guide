@@ -167,11 +167,13 @@ community.
     
 * Favor `unless` over `if` in order to express edge case character (if applicable)
 
+    ```Ruby
     # bad (if missing address is edge case)
     process address if address.present?
     
     # good (if missing address is edge case)
     process address unless address.blank?
+    ```
     
 * Favor `unless` over `if` in order to focus on important operations instead of edge case treatment.
   If edge case treatment is as simple as raising an Exception or returning something, do it directly.
