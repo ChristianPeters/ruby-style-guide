@@ -26,13 +26,14 @@ community.
       core.autocrlf true` to protect your project from Windows line endings
       creeping into your project.
 * Use spaces around operators, after commas, colons and semicolons, around {
-  and before }.
+  and before } (Exception: Interpolation).
 
     ```Ruby
     sum = 1 + 2
     a, b = 1, 2
     1 > 2 ? true : false; puts "Hi"
     [1, 2, 3].each { |e| puts e }
+    "Hello #{name}!"
     ```
 
 * No spaces after (, [ or before ], ).
@@ -66,14 +67,12 @@ community.
            end
     ```
 
-* Use an empty line before the return value of a method (unless it
-  only has one line), and an empty line between `def`s.
+* Use one empty line between `def`s. 
 
     ```Ruby
     def some_method
       do_something
       do_something_else
-
       result
     end
 
@@ -82,13 +81,10 @@ community.
     end
     ```
     
-* Use RDoc and its conventions for API documentation.  Don't put an
+* Use RDoc and its conventions for API documentation. (Really RDoc?) Don't put an
   empty line between the comment block and the `def`.
-* Use empty lines to break up a method into logical paragraphs.
-* Keep lines fewer than 80 characters. (Emacs users should really have a look
-  at whitespace-mode.)
-* Avoid trailing whitespace. (Emacs users: Whitespace-mode again comes to the
-  rescue.)
+* If you feel you should partition parts of your method with empty lines, consider splitting it into smaller methods before doing so.
+* Do not pollute the file with trailing whitespaces.
 
 ## Syntax
 
@@ -106,7 +102,7 @@ community.
      ```
 
 * Never use `for`, unless you know exactly why. Most of the time iterators
-  should be used instead.
+  should be used instead. (Why?)
 
     ```Ruby        
     arr = [1, 2, 3]
@@ -134,37 +130,7 @@ community.
     end
     ```
 
-* Favor `if/then/else` over the ternary operator. *if* is an
-  expression in Ruby and the resulting code is arguably easier to
-  read (albeit not as concise). Remember that _"Programs must be written for
-  people to read, and only incidentally for machines to execute."_ (Abelson
-  and Sussman)
-
-    ```Ruby
-    # good
-    result = if some_condition then something else something_else end
-
-    # not so good
-    result = some_condition ? something : something_else
-    ```
-
-* Never use `if x; ...` - it is deprecated in Ruby 1.9. Use
-  `if/then/else` instead.
-
-    ```Ruby
-    # bad
-    result = if some_condition; something else something_else end
-
-    # good
-    result = if some_condition then something else something_else end
-    ```
-
-* Use `when x then ...` for one-line cases. The alternative syntax
-  `when x; ...` is deprecated in Ruby 1.9.
-
-* Use `&&/||` for boolean expressions, `and/or` for control flow.  (Rule
-  of thumb: If you have to use outer parentheses, you are using the
-  wrong operators.)
+* Use `&&/||` for boolean expressions, `and/or` for control flow. The latter pair has low operator precedence
 
     ```Ruby
     # boolean expression
@@ -177,8 +143,7 @@ community.
     ```
 
 * Avoid multiline ?: (the ternary operator), use `if/unless` instead.
-* Favor modifier `if/unless` usage when you have a single-line
-  body. Another good alternative is the usage of control flow `and/or`.
+* Favor modifier `if/unless` usage when you have a single-line body.
 
     ```Ruby
     # bad
@@ -188,13 +153,9 @@ community.
 
     # good
     do_something if some_condition
-
-    # another good option
-    some_condition and do_something
     ```
 
-* Favor `unless` over `if` for negative conditions (or control
-  flow `or`).
+* Favor `unless` over `if` for negative conditions.
        
     ```Ruby
     # bad
@@ -202,9 +163,41 @@ community.
 
     # good
     do_something unless some_condition
+    ```
+    
+* Favor `unless` over `if` in order to express edge case character (if applicable)
 
-    # another good option
-    some_condition or do_something
+    # bad (if missing address is edge case)
+    process address if address.present?
+    
+    # good (if missing address is edge case)
+    process address unless address.blank?
+    
+* Favor `unless` over `if` in order to focus on important operations instead of edge case treatment.
+  If edge case treatment is as simple as raising an Exception or returning something, do it directly.
+       
+    ```Ruby
+    # bad
+    if edge_case
+      treat edge_case
+    else
+      process
+    end
+
+    # good
+    unless edge_case
+      process
+    else
+      treat_edge_case
+    end
+    
+    # good alternative 1
+    raise Exception if unprocessable
+    process
+    
+    # good alternative 2
+    return nil if unprocessable
+    process
     ```
     
 * Suppress superfluous parentheses when calling methods, but keep them
@@ -216,10 +209,10 @@ community.
     array.delete e
     ```
         
-* Prefer {...} over do...end for single-line blocks.  Avoid using {...} for
-  multi-line blocks.  Always use do...end for "control flow" and "method
-  definitions" (e.g. in Rakefiles and certain DSLs.)  Avoid do...end when
-  chaining.
+* Prefer {...} over do...end for single-line blocks.
+  Avoid using {...} for multi-line blocks.
+  Always use do...end for "control flow" and "method definitions" (e.g. in Rakefiles and certain DSLs).
+  Avoid do...end when chaining.
 
 * Avoid `return` where not required.
 
@@ -235,18 +228,7 @@ community.
     end
     ```
 
-* Avoid line continuation (\\) where not required. In practice, avoid using
-  line continuations at all.
-
-    ```Ruby
-    # bad
-    result = 1 - \
-             2
-
-    # good (but still ugly as hell)
-    result = 1 \
-             - 2
-    ```
+* Avoid line continuation (\\).
 
 * Using the return value of = is ok.
 
@@ -261,6 +243,25 @@ community.
     name ||= "Bozhidar"
     ```
 
+* Make use of blank?, present? and presence.
+
+    ```Ruby
+    # bad
+    unless address.nil? || address.empty?
+    
+    # good
+    unless address.blank?
+    if address.present?
+    
+    # bad
+    state   = params[:state]   if params[:state].present?
+    country = params[:country] if params[:country].present?
+    region  = state || country || 'US'
+
+    # good
+    region = params[:state].presence || params[:country].presence || 'US'
+    ```
+
 * Avoid using Perl-style global variables (like $0-9, $`, ...).
 
 * Never put a space between a method name and the opening parenthesis.
@@ -273,13 +274,6 @@ community.
     f(3 + 2) + 1
     ```
 
-* If the first argument to a method begins with an open parenthesis,
-  always use parentheses in the method invocation. For example, write
-`f((3 + 2) + 1)`.
-
-* Always run the Ruby interpreter with the `-w` option so it will warn
-  you if you forget either of the rules above!
-
 ## Naming
 
 * Use `snake_case` for methods and variables.
@@ -291,29 +285,7 @@ community.
   (i.e. `Array#empty?`).
 * The names of potentially "dangerous" methods (i.e. methods that modify `self` or the
   arguments, `exit!`, etc.) should end with exclamation marks.
-* The length of an identifier determines its scope.  Use one-letter variables
-  for short block/method parameters, according to this scheme:
 
-        a,b,c: any object
-        d: directory names
-        e: elements of an Enumerable
-        ex: rescued exceptions
-        f: files and file names
-        i,j: indexes
-        k: the key part of a hash entry
-        m: methods
-        o: any object
-        r: return values of short methods
-        s: strings
-        v: any value
-        v: the value part of a hash entry
-        x,y,z: numbers
-
-  And in general, the first letter of the class name if all objects are of
-  that type.
-
-* When using `inject` with short blocks, name the arguments `|a, e|`
-  (accumulator, element).
 * When defining binary operators, name the argument `other`.
 
     ```Ruby
@@ -321,10 +293,14 @@ community.
       # body omitted
     end
     ```
-    
-* Prefer `map` over *collect*, `find` over *detect*, `select` over
-  *find_all*, `size` over *length*. This is not a hard requirement; if the
-  use of the alias enhances readability, it's ok to use it.
+
+* Prefer `collect` over `map` if you are just collecting attributes without transformations
+
+    ```Ruby
+    # good
+    user_names = users.collect { |u| u.name }
+    downcased_user_names = user_names.map { |n| n.downcase }
+    ```
 
 ## Comments
 
@@ -333,8 +309,7 @@ community.
   yourself, ‘How can I improve the code so that this comment isn't needed?’
   Improve the code and then document it to make it even clearer."_ (Steve
   McConnell)
-* Comments longer than a word are capitalized and use punctuation. Use [one
-  space](http://en.wikipedia.org/wiki/Sentence_spacing) after periods.
+* If your comment is a sentence, start it capitalized and use punctuation.
 * Avoid superfluous comments.
 
     ```Ruby
@@ -355,26 +330,21 @@ community.
 * Consider adding factory methods to provide additional sensible ways
   to create instances of a particular class.
 * Prefer duck-typing over inheritance.
-* Avoid the usage of class (@@) variables due to their "nasty" behavior
-  in inheritance.
+* Avoid the usage of class (@@) variables due to their "nasty" behavior.
 * Assign methods proper visibility levels (`private`, `protected`)
 in accordance with their intended usage. Don't go off leaving
-everything `public` (which is the default). After all we're coding
-in *Ruby* now, not in *Python*.
+everything `public` (which is the default).
 
 ## Exceptions
 
-* Don't suppress exceptions.
-* Don't use exceptions for flow of control.
-* Avoid rescuing the `Exception` class.
+* Don't suppress exceptions without sending out a Airbrake notification manually.
+* Avoid rescuing more than you expect to fail (e.g. begin .. rescue - without a specific Exception class)
 
 ## Misc
 
-* Write `ruby -w` safe code.
-* Avoid hashes as optional parameters. Does the method do too much?
 * Avoid methods longer than 10 LOC (lines of code). Ideally most methods will be shorter than
-  5 LOC. Empty lines do not contribute to the relevant LOC.
-* Avoid parameter lists longer than three or four parameters.
+  5 LOC.
+* Try to keep the argument list small. Consider the use of opts = {} as last parameter to include further parameters as options.
 * Use `def self.method` to define singleton methods. This makes the methods
   more resistant to refactoring changes.
 
@@ -392,26 +362,7 @@ in *Ruby* now, not in *Python*.
     end
     ```
 
-* Add "global" methods to Kernel (if you have to) and make them private.
-* Use class instance variables instead of global variables.
- 
-    ```Ruby
-    #bad 
-    $foo_bar = 1
-
-    #good
-    class Foo
-      class << self
-        attr_accessor :bar
-      end
-    end
-    
-    Foo.bar = 1
-    ```
-
 * Avoid `alias` when `alias_method` will do.
-* Use `OptionParser` for parsing complex command line options and
-  `ruby -s` for trivial command line options.
 * Write for Ruby 1.9. Don't use legacy Ruby 1.8 constructs.
     * Use the new JavaScript literal hash syntax.
     * Use the new lambda syntax.
@@ -444,10 +395,4 @@ in *Ruby* now, not in *Python*.
 
 # Contributing
 
-Nothing written in this guide is set in stone. It's my desire to work
-together with everyone interested in Ruby coding style, so that we could
-ultimately create a resource that will be beneficial to the entire Ruby
-community.
-
-Feel free to open tickets or send pull requests with improvements. Thanks in
-advance for your help!
+Feel free to open tickets or send pull requests with improvements.
